@@ -4,7 +4,8 @@
 
 int main(){
     int port {12234};
-    std::string_view host {"10.0.33.133"};
+    //std::string_view host {"10.0.33.133"};
+    std::string_view host {"0.0.0.0"};
     int recv_bytes = 0;
     std::string ans;
 

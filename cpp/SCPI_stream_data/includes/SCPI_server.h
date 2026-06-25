@@ -7,6 +7,22 @@
 #include <mutex>
 #include <thread>
 
+
+struct fitsWritterParams {
+    std::string_view encoding = "IEEE";  //or I am UTC?  4
+    std::string_view beFormat = "F   ";  //              4 
+    int32_t pkt_len = 80;
+    std::string_view beName = "HOLOBE  "; //              8
+    std::string_view timeSystem ="TAI "; //              4 (blank at the end!)
+    //std::string_view[28] stamp = "";    //YYYY-mm-ddTHH:MM:SS.ssss[TAI‖GPS‖UTC]+1 blank
+    int32_t integTime_us = 100;
+    int32_t phaseNum = 1;
+    int32_t numBeSec = 1;
+    int32_t blockFactor = 3;//if larger than 1 assumes equidistant steps
+    int32_t numChannels = 2;
+};
+
+
 class SCPI_server {
     private:
         int sock {-1};
@@ -21,7 +37,7 @@ class SCPI_server {
         std::atomic<bool> stream_paused {false};
         std::atomic<bool> thread_alive {false};
         std::thread worker;
-
+        fitsWritterParams fitsWritterMsgParams;
 
     public:
         SCPI_server(std::string_view ip, int port, int timeout=-1, 
@@ -41,7 +57,20 @@ class SCPI_server {
         int help(std::string_view msg, std::string& out_msg);
 
         int setDestStreamIP(std::string_view msg, std::string& out_msg);
+        int getDestStreamIP(std::string_view msg, std::string& out_msg);
         int setDestStreamPort(std::string_view msg, std::string& out_msg);
+        int getDestStreamPort(std::string_view msg, std::string& out_msg);
+
+
+        int fitsWritterFormatter(std::string& out_msg, double amp, double phase, 
+            std::chrono::system_clock::time_point stamp);
+
+        int fitsWritterTimestamp(std::string &out_msg, 
+            std::chrono::system_clock::time_point stamp,
+            std::string_view timeSystem
+        );
+
+        int fitsWritterTest(std::string_view msg, std::string& out_msg);
 
 
         int addTimestampAnswer(std::string &out_msg);
@@ -64,7 +93,10 @@ class SCPI_server {
             {"SCPI_SERVER:RESUME_STREAM", &SCPI_server::resume_stream },
             {"SCPI_SERVER:CLOSE_STREAM", &SCPI_server::close_stream },
             {"SCPI_SERVER:SET_DEST_IP", &SCPI_server::setDestStreamIP},
+            {"SCPI_SERVER:GET_DEST_IP", &SCPI_server::getDestStreamIP},
             {"SCPI_SERVER:SET_DEST_PORT", &SCPI_server::setDestStreamPort},
+            {"SCPI_SERVER:GET_DEST_PORT", &SCPI_server::getDestStreamPort},
+            {"SCPI_SERVER:TEST", &SCPI_server::fitsWritterTest},
         };
 };
 

@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string>
 #include <charconv>
+#include <sstream>
+#include <iomanip>
 
 
 SCPI_server::SCPI_server(std::string_view host, int port, int timeout,
@@ -74,3 +76,103 @@ int SCPI_server::help(std::string_view input_data, std::string &out_msg){
     return 0;
 }
 
+
+
+int SCPI_server::fitsWritterFormatter(std::string& out_msg, double amp, double phase,
+        std::chrono::system_clock::time_point stamp){
+    //The format of the fitswritter message is:
+    //encoding      char[4]: IEEE
+    //data format   char[4]: F+3blank
+    //packetlen     int: 
+    //backend id    char[8]: HOLOBE
+    //timestamp     char[28]: YYYY-mm-ddTHH:MM:SS.ssss[TAI‖GPS‖UTC]+1 blank
+    //integTime     int: In us
+    //phasenum      int: 1 for us
+    //numBeSections int: 1
+    //blocking      int: 10 (above 1 assumes integration time steps)
+    //***upto here we have 64 bytes
+    //data: BeSec<int>+numChannel<int>2, amp<float>, phase<float>
+
+    //data should be 2 size (amp and phase)
+   
+    out_msg = "";
+    out_msg += fitsWritterMsgParams.encoding;
+    out_msg += fitsWritterMsgParams.beFormat;
+    
+    out_msg.append(reinterpret_cast<char*>(&fitsWritterMsgParams.pkt_len), 
+            sizeof(fitsWritterMsgParams.pkt_len));
+    
+    out_msg += fitsWritterMsgParams.beName;
+    SCPI_server::fitsWritterTimestamp(out_msg, stamp, fitsWritterMsgParams.timeSystem);
+    
+    out_msg.append(reinterpret_cast<char*>(&fitsWritterMsgParams.integTime_us),
+            sizeof(fitsWritterMsgParams.integTime_us));
+
+    out_msg.append(reinterpret_cast<char*>(&fitsWritterMsgParams.phaseNum),
+            sizeof(fitsWritterMsgParams.phaseNum));
+
+    out_msg.append(reinterpret_cast<char*>(&fitsWritterMsgParams.numBeSec),
+            sizeof(fitsWritterMsgParams.numBeSec));
+
+    out_msg.append(reinterpret_cast<char*>(&fitsWritterMsgParams.blockFactor),
+            sizeof(fitsWritterMsgParams.blockFactor));
+
+    //Here we start with the data part
+    out_msg.append(reinterpret_cast<char*>(&fitsWritterMsgParams.numBeSec),
+           sizeof(fitsWritterMsgParams.numBeSec));  //Be section (in priniple we should do like a for loop
+                                                    //
+    out_msg.append(reinterpret_cast<char*>(&fitsWritterMsgParams.numChannels),
+            sizeof(fitsWritterMsgParams.numChannels));
+
+    float amp_f =  static_cast<float>(amp);
+    float phase_f = static_cast<float>(phase);
+
+    out_msg.append(reinterpret_cast<char*>(&amp_f),
+        sizeof(amp_f));
+
+    out_msg.append(reinterpret_cast<char*>(&phase_f),
+        sizeof(phase_f));
+    return 0;
+}
+
+
+
+int SCPI_server::fitsWritterTimestamp(std::string &out_msg, 
+        std::chrono::system_clock::time_point stamp,
+        std::string_view timeSystem
+        ){
+    using namespace std::chrono;
+
+    //auto now = system_clock::now();
+
+    auto ms =
+        duration_cast<milliseconds>(
+            stamp.time_since_epoch()) % 1000;
+
+    auto tt = system_clock::to_time_t(stamp);
+
+    std::tm tm = *gmtime(&tt);
+
+    std::ostringstream oss;
+
+    oss << std::put_time(
+                &tm,
+                "%Y-%m-%dT%H:%M:%S")
+        << '.'
+        << std::setw(4)
+        << std::setfill('0')
+        << ms.count();
+    out_msg +=oss.str();
+    out_msg += timeSystem;
+    return 0;
+}
+
+int SCPI_server::fitsWritterTest(std::string_view msg, std::string& out_msg){
+    std::cout << "asdasd";
+    auto now = std::chrono::system_clock::now();
+    double amp =  1.2423;
+    double phase=  1.2423;
+    SCPI_server::fitsWritterFormatter(out_msg, amp, phase, now);
+    std::cout << out_msg << "\n";
+    return 0;
+}

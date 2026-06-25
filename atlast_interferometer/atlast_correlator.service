@@ -1,0 +1,21 @@
+[Unit]
+Description=Atlast correlator
+After=network.target
+
+[Service]
+Type=simple
+
+User=interferometer
+WorkingDirectory=/home/interferometer/sandbox/masked_correlator/build
+
+ExecStart=/home/interferometer/sandbox/run_correlation.sh
+
+Restart=always
+RestartSec=2
+
+# Useful logging
+StandardOutput=append:/home/interferometer/correlator.log
+StandardError=append:/home/interferometer/correlator.log
+
+[Install]
+WantedBy=multi-user.target
