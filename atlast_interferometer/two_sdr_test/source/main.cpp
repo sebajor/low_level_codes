@@ -118,7 +118,7 @@ void StreamA0Callback(short *xi, short *xq, sdrplay_api_StreamCbParamsT *params,
             adc0_0_re[write_buffer_index][adc0_0_counter] = xi[i];
             adc0_0_im[write_buffer_index][adc0_0_counter] = xq[i];
             adc0_0_counter++;
-            if(adc0_counter==nsamples_global){
+            if(adc0_0_counter==nsamples_global){
                 adc0_0_ready = 1;
             }
         }
@@ -200,6 +200,15 @@ int main(int argc, char *argv[]){
 
     //set the global numsmaples to iterate over
     nsamples_global = params.batches*params.nsamp+params.nsamp_overhead;
+
+    //initialize the buffers
+    for(int i=0; i<N_BUFFERS;++i){
+        adc0_0_re[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
+        adc0_0_im[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
+        adc1_0_re[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
+        adc1_0_im[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
+    }
+
     //generate stop signal handler
     std::signal(SIGINT, signal_handler);   // Ctrl+C
     std::signal(SIGTERM, signal_handler);  // kill
@@ -209,13 +218,6 @@ int main(int argc, char *argv[]){
     intialize_device(chosenDevice0, cbFns0, err);
     std::cout << "done\n";
 
-    //initialize the buffers
-    for(int i=0; i<N_BUFFERS;++i){
-        adc0_0_re[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
-        adc0_0_im[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
-        adc1_0_re[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
-        adc1_0_im[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
-    }
     
     int current_read=0;
     int local_batch_num=0;
@@ -234,7 +236,7 @@ int main(int argc, char *argv[]){
             chA0Started.store(0);
             adc1_0_ready.store(0);
             chB0Started.store(0);
-            if(writedata_adc(int iteration, int sdr_number,
+            if(writedata_adc(iteration, 0,
                 adc0_0_re[current_read], adc0_0_im[current_read], 
                 adc1_0_re[current_read], adc1_0_im[current_read],
                 firstSampleA0, firstSampleB0, numsamples)
@@ -244,7 +246,7 @@ int main(int argc, char *argv[]){
     }
 
     std::cout << "Release the api...";
-    sdrplay_api_ReleaseDevice(chosenDevice);
+    sdrplay_api_ReleaseDevice(chosenDevice0);
     std::cout << "done\n";
     free_api();
     return 0;
