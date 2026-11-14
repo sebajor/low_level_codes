@@ -7,6 +7,7 @@ include_directories(../includes
 add_executable(${PROJECT_NAME} 
     main.cpp
     sdr_config.cpp
+    global_params.cpp
 )
 
 
