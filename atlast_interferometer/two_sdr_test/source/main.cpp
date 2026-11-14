@@ -221,6 +221,18 @@ int main(int argc, char *argv[]){
     cbFns0.StreamBCbFn = StreamB0Callback;
     cbFns0.EventCbFn = EventCallback;
 
+    // Additional Open for the second device (API 3.15 workaround)
+	if ((err = sdrplay_api_Open()) != sdrplay_api_Success) {
+		std::cerr << "Second sdrplay_api_Open failed: "
+				  << sdrplay_api_GetErrorString(err) << '\n';
+		exit(1);
+	}
+
+	// Lock before selecting the second device
+	if ((err = sdrplay_api_LockDeviceApi()) != sdrplay_api_Success) {
+		std::cerr << "LockDeviceApi failed\n";
+		exit(1);
+	}
     
     std::cout << "selecting sdr1..\n";
     if(select_device(devs, 1, chosenDevice1))

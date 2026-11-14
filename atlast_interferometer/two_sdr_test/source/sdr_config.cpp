@@ -22,6 +22,7 @@ int get_sdr_api(sdrplay_api_DeviceT* devs, int max_devs,sdrplay_api_ErrT &err){
         std::cout << "sdrplay_api_ApiVersion failed " << sdrplay_api_GetErrorString(err)<< "\n";
         return 1;
     }
+    std::cout << "SDRPlay version: " << ver << "\n";
     if (ver != SDRPLAY_API_VERSION){
         std::cout << "API version don't match (local:"<< SDRPLAY_API_VERSION <<", dll:" << ver <<"\n";
         sdrplay_api_Close();
