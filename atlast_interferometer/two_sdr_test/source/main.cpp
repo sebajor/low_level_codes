@@ -205,28 +205,28 @@ int main(int argc, char *argv[]){
         exit(0);
     std::cout << "done\n";
 
-    std::cout << "selecting sdr0..";
+    std::cout << "selecting sdr0..\n";
     if(select_device(devs, 0, chosenDevice0))
         exit(0);
-    std::cout << "done\n";
+    std::cout << "done\n\n";
 
-    std::cout << "configuring sdr0...";
+    std::cout << "configuring sdr0...\n";
     if(configureChoseDevice(chosenDevice0, deviceParams0,
                 chParamsA0, chParamsB0,
                 params, err))
         exit(0);
-    std::cout << "done\n";
+    std::cout << "done\n\n";
     //Assign callback functions to be passed to sdrplay_api_Init()
     cbFns0.StreamACbFn = StreamA0Callback;
     cbFns0.StreamBCbFn = StreamB0Callback;
     cbFns0.EventCbFn = EventCallback;
 
     
-    std::cout << "selecting sdr1..";
+    std::cout << "selecting sdr1..\n";
     if(select_device(devs, 1, chosenDevice1))
         exit(0);
     std::cout << "done\n";
-    std::cout << "configuring sdr1...";
+    std::cout << "configuring sdr1...\n";
     if(configureChoseDevice(chosenDevice1, deviceParams1,
                 chParamsA1, chParamsB1,
                 params, err))
@@ -297,14 +297,16 @@ int main(int argc, char *argv[]){
             if(writedata_adc(iteration, 0,
                 adc0_0_re[current_read], adc0_0_im[current_read], 
                 adc1_0_re[current_read], adc1_0_im[current_read],
-                firstSampleA0, firstSampleB0, numsamples)
+                firstSampleA0, firstSampleB0, nsamples_global)){
                     std::cout << "error writing the SDR0 data out\n";
+	    }
 
             if(writedata_adc(iteration, 1,
                 adc0_1_re[current_read], adc0_1_im[current_read], 
                 adc1_1_re[current_read], adc1_1_im[current_read],
-                firstSampleA1, firstSampleB1, numsamples)
+                firstSampleA1, firstSampleB1, nsamples_global)){
                     std::cout << "error writing the SDR1 data out\n";
+	    }
             iteration ++;
         }
     }

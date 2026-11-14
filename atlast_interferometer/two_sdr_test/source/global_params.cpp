@@ -2,9 +2,6 @@
 
 //signal handler
 std::atomic<bool> g_stop(false);
-//ping-pong buffers hyperparamaters
-constexpr int vectorsize=2048;
-constexpr int N_BUFFERS=2;
 
 
 //SDR0

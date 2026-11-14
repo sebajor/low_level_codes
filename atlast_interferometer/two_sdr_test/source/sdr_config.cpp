@@ -50,7 +50,7 @@ int get_sdr_api(sdrplay_api_DeviceT* devs, int max_devs,sdrplay_api_ErrT &err){
 }
 
 
-int select_device(sdrplay_api_DeviceT &devs[], int chosenIdx,
+int select_device(sdrplay_api_DeviceT* devs, int chosenIdx,
             sdrplay_api_DeviceT* &chosenDevice){
     std::cout << "chosenDevice=" << chosenIdx << "\n";
     chosenDevice = &devs[chosenIdx];        //not sure of this!

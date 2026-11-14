@@ -1,4 +1,3 @@
-#include "sdr_config.h"
 #include <iostream>
 #include <string>
 #include "sdrplay_api.h"
@@ -14,17 +13,17 @@
 
 
 //signal handler
-extern std::atomic<bool> g_stop(false);
+extern std::atomic<bool> g_stop;
 //ping-pong buffers hyperparamaters
 constexpr int vectorsize=2048;
 constexpr int N_BUFFERS=2;
 
 
 //SDR0
-extern std::atomic<int> adc0_0_ready=0, adc1_0_ready=0;
-extern std::atomic<int> adc0_0_counter=0, adc1_0_counter=0;
-extern std::atomic<bool> chA0Started=0, chB0Started=0;
-extern std::atomic<uint64_t> firstSampleA0=0, firstSampleB0=0;
+extern std::atomic<int> adc0_0_ready, adc1_0_ready;
+extern std::atomic<int> adc0_0_counter, adc1_0_counter;
+extern std::atomic<bool> chA0Started, chB0Started;
+extern std::atomic<uint64_t> firstSampleA0, firstSampleB0;
 
 extern std::vector<short> adc0_0_re[N_BUFFERS];
 extern std::vector<short> adc0_0_im[N_BUFFERS];
@@ -32,10 +31,10 @@ extern std::vector<short> adc1_0_re[N_BUFFERS];
 extern std::vector<short> adc1_0_im[N_BUFFERS];
 
 //SDR1
-extern std::atomic<int> adc0_1_ready=0, adc1_1_ready=0;
-extern std::atomic<int> adc0_1_counter=0, adc1_1_counter=0;
-extern std::atomic<bool> chA1Started=0, chB1Started=0;
-extern std::atomic<uint64_t> firstSampleA1=0, firstSampleB1=0;
+extern std::atomic<int> adc0_1_ready, adc1_1_ready;
+extern std::atomic<int> adc0_1_counter, adc1_1_counter;
+extern std::atomic<bool> chA1Started, chB1Started;
+extern std::atomic<uint64_t> firstSampleA1, firstSampleB1;
 
 extern std::vector<short> adc0_1_re[N_BUFFERS];
 extern std::vector<short> adc0_1_im[N_BUFFERS];
@@ -43,14 +42,14 @@ extern std::vector<short> adc1_1_re[N_BUFFERS];
 extern std::vector<short> adc1_1_im[N_BUFFERS];
 
 //this one should be common for both sdr
-extern std::atomic<int> write_buffer_index =0;
-extern std::atomic<int> nsamples_global=32;
+extern std::atomic<int> write_buffer_index;
+extern std::atomic<int> nsamples_global;
 
 
 
 //bullshit
-extern std::atomic<int> masterInitialized=0;
-extern std::atomic<int> slaveInitialized=0;
+extern std::atomic<int> masterInitialized;
+extern std::atomic<int> slaveInitialized;
 
 
 struct hyperparameters {
