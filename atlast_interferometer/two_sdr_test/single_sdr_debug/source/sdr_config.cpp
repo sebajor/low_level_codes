@@ -1,10 +1,11 @@
-#include "sdrplay_api.h"
-#include <iostream>
+#include "../includes/global_params.h"
+#include "../includes/sdr_config.h"
 
 
 //These are the configuration functions to be called
 //this is just ot get the api and lock it
-int get_sdr_api(sdrplay_api_DeviceT &devs[], int max_devs,sdrplay_api_ErrT &err){
+int get_sdr_api(sdrplay_api_DeviceT devs[], int max_devs,  int chosenIdx,
+        sdrplay_api_DeviceT* &chosenDevice, sdrplay_api_ErrT &err){
     //this function initialize the sdr api.. if fails it returns 1
     float ver=0;
     unsigned int ndev=0;
@@ -47,16 +48,13 @@ int get_sdr_api(sdrplay_api_DeviceT &devs[], int max_devs,sdrplay_api_ErrT &err)
     }
     //alwuys take the id 0
     //chosenIdx = 0;
-    return 0;
-}
-
-
-int select_device(sdrplay_api_DeviceT &devs[], int chosenIdx,
-            sdrplay_api_DeviceT* &chosenDevice){
     std::cout << "chosenDevice=" << chosenIdx << "\n";
     chosenDevice = &devs[chosenIdx];        //not sure of this!
-    
+	std::cout << "serial number: "<<devs[chosenIdx].SerNo << "\n";
+	std::cout << "hw ver: "<<devs[chosenIdx].hwVer << "\n";
+	
     std::cout << "check if the selected device is the RSPduo.. ";
+
     if (chosenDevice->hwVer != SDRPLAY_RSPduo_ID){
         printf("Device is not RSPDuo\n");
         sdrplay_api_UnlockDeviceApi();
@@ -106,8 +104,7 @@ int configureChoseDevice(sdrplay_api_DeviceT* &chosenDevice,
         return 1;
     }
     //if everything ok unlock api
-    //sdrplay_api_UnlockDeviceApi();
-
+    sdrplay_api_UnlockDeviceApi();
     // Retrieve device parameters so they can be changed if wanted
     if ((err = sdrplay_api_GetDeviceParams(chosenDevice->dev, &deviceParams)) !=sdrplay_api_Success){
         std::cout << "sdrplay_api_GetDeviceParams failed\n";

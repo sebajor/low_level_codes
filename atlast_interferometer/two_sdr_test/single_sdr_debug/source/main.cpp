@@ -1,56 +1,6 @@
-#include "sdr_config.h"
-#include <iostream>
-#include <string>
-#include "sdrplay_api.h"
-#include <atomic>
-#include <vector>
-#include <fftw3.h>
-#include <unistd.h>
-#include <fstream>
-#include <cmath>
-#include <chrono>
-#include <cstdint>
-#include <csignal>
+#include "../includes/global_params.h"
+#include "../includes/sdr_config.h"
 
-
-//signal handler
-std::atomic<bool> g_stop(false);
-//ping-pong buffers hyperparamaters
-constexpr int vectorsize=2048;
-constexpr int N_BUFFERS=2;
-
-
-//SDR0
-std::atomic<int> adc0_0_ready=0, adc1_0_ready=0;
-std::atomic<int> adc0_0_counter=0, adc1_0_counter=0;
-std::atomic<bool> chA0Started=0, chB0Started=0;
-std::atomic<uint64_t> firstSampleA0=0, firstSampleB0=0;
-
-std::vector<short> adc0_0_re[N_BUFFERS];
-std::vector<short> adc0_0_im[N_BUFFERS];
-std::vector<short> adc1_0_re[N_BUFFERS];
-std::vector<short> adc1_0_im[N_BUFFERS];
-
-//SDR1
-std::atomic<int> adc0_1_ready=0, adc1_1_ready=0;
-std::atomic<int> adc0_1_counter=0, adc1_1_counter=0;
-std::atomic<bool> chA1Started=0, chB1Started=0;
-std::atomic<uint64_t> firstSampleA1=0, firstSampleB1=0;
-
-std::vector<short> adc0_1_re[N_BUFFERS];
-std::vector<short> adc0_1_im[N_BUFFERS];
-std::vector<short> adc1_1_re[N_BUFFERS];
-std::vector<short> adc1_1_im[N_BUFFERS];
-
-//this one should be common for both sdr
-std::atomic<int> write_buffer_index =0;
-std::atomic<int> nsamples_global=32;
-
-
-
-//bullshit
-std::atomic<int> masterInitialized=0;
-std::atomic<int> slaveInitialized=0;
 
 
 void signal_handler(int signum){
@@ -160,60 +110,6 @@ void StreamB0Callback(short *xi, short *xq, sdrplay_api_StreamCbParamsT *params,
 
 }
 
-
-//callbacks SDR1
-void StreamA1Callback(short *xi, short *xq, sdrplay_api_StreamCbParamsT *params, 
-        unsigned int numSamples, unsigned int reset, void *cbContext){
-    if(reset)
-        std::cout << "StreamAcallback: numSamples=" << numSamples << 
-            " firstSampleNum="<< params->firstSampleNum<<"\n";
-    for(int i=0; i<numSamples;++i){
-        if(!chA1Started.load(std::memory_order_acquire)){
-            firstSampleA1.store(params->firstSampleNum + i, std::memory_order_relaxed);
-            adc0_1_counter.store(0, std::memory_order_relaxed);
-            chA1Started.store(true, std::memory_order_release);
-        }
-        if(adc0_1_counter!=nsamples_global){
-            adc0_1_re[write_buffer_index][adc0_1_counter] = xi[i];
-            adc0_1_im[write_buffer_index][adc0_1_counter] = xq[i];
-            adc0_1_counter++;
-            if(adc0_1_counter==nsamples_global){
-                adc0_1_ready = 1;
-            }
-        }
-    }
-}
-
-void StreamB1Callback(short *xi, short *xq, sdrplay_api_StreamCbParamsT *params, 
-        unsigned int numSamples, unsigned int reset, void *cbContext){
-    if(reset)
-        std::cout << "StreamBcallback: numSamples=" << numSamples <<
-            " firstSampleNum="<< params->firstSampleNum<<"\n";
-    //this is just a test
-    for(int i=0; i<numSamples;++i){
-        if(!chB1Started.load(std::memory_order_acquire)){
-            firstSampleB1.store(params->firstSampleNum + i, std::memory_order_relaxed);
-            adc1_1_counter.store(0, std::memory_order_relaxed);
-            chB1Started.store(true, std::memory_order_release);
-        }
-        //if(!adc1_ready){
-        if(adc1_1_counter != nsamples_global){
-            adc1_1_re[write_buffer_index][adc1_1_counter] = xi[i];
-            adc1_1_im[write_buffer_index][adc1_1_counter] = xq[i];
-            adc1_1_counter++;
-            if(adc1_1_counter==nsamples_global){
-                adc1_1_ready = 1;
-
-            }
-        }
-    }
-
-}
-
-
-
-
-
 void EventCallback(sdrplay_api_EventT eventId, sdrplay_api_TunerSelectT tuner,
         sdrplay_api_EventParamsT *params, void *cbContext){
 }
@@ -240,57 +136,22 @@ int main(int argc, char *argv[]){
     sdrplay_api_DeviceParamsT *deviceParams0 = NULL;
     sdrplay_api_CallbackFnsT cbFns0;
     sdrplay_api_RxChannelParamsT *chParams0,*chParamsA0,*chParamsB0;
-
-    sdrplay_api_DeviceT *chosenDevice1 = NULL;
-    sdrplay_api_DeviceParamsT *deviceParams1 = NULL;
-    sdrplay_api_CallbackFnsT cbFns1;
-    sdrplay_api_RxChannelParamsT *chParams1,*chParamsA1,*chParamsB1;
     
     //no idea if i need just one of this..
     sdrplay_api_ErrT err;
 
-    //
-    std::cout << "getting sdr api..";
-    if(get_sdr_api(devs, max_devs, err))
+    if(get_sdr_api(devs, max_devs, 0,
+                chosenDevice0, err))
         exit(0);
-    std::cout << "done\n";
-
-    std::cout << "selecting sdr0..";
-    if(select_device(devs, 0, chosenDevice0))
-        exit(0);
-    std::cout << "done\n";
-
-    std::cout << "configuring sdr0...";
     if(configureChoseDevice(chosenDevice0, deviceParams0,
                 chParamsA0, chParamsB0,
                 params, err))
         exit(0);
-    std::cout << "done\n";
     //Assign callback functions to be passed to sdrplay_api_Init()
     cbFns0.StreamACbFn = StreamA0Callback;
     cbFns0.StreamBCbFn = StreamB0Callback;
     cbFns0.EventCbFn = EventCallback;
 
-    
-    std::cout << "selecting sdr1..";
-    if(select_device(devs, 1, chosenDevice1))
-        exit(0);
-    std::cout << "done\n";
-    std::cout << "configuring sdr1...";
-    if(configureChoseDevice(chosenDevice1, deviceParams1,
-                chParamsA1, chParamsB1,
-                params, err))
-        exit(0);
-    std::cout << "done\n";
-    //Assign callback functions to be passed to sdrplay_api_Init()
-    cbFns1.StreamACbFn = StreamA1Callback;
-    cbFns1.StreamBCbFn = StreamB1Callback;
-    cbFns1.EventCbFn = EventCallback;
-    
-
-    std::cout << "unlocking api..";
-    sdrplay_api_UnlockDeviceApi(); //CHECK!!! this was on the configureChosenDevice previously!
-    std::cout << "done\n";
 
     //
     //
@@ -305,20 +166,15 @@ int main(int argc, char *argv[]){
         adc0_0_im[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
         adc1_0_re[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
         adc1_0_im[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
-
-        adc0_1_re[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
-        adc0_1_im[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
-        adc1_1_re[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
-        adc1_1_im[i].resize(params.batches*params.nsamp+params.nsamp_overhead);
     }
 
     //generate stop signal handler
     std::signal(SIGINT, signal_handler);   // Ctrl+C
     std::signal(SIGTERM, signal_handler);  // kill
                                            //
-    std::cout << "initializing the receivers...";
+    std::cout << "got the api\n";
+    std::cout << "configuring the receivers...";
     intialize_device(chosenDevice0, cbFns0, err);
-    intialize_device(chosenDevice1, cbFns1, err);
     std::cout << "done\n";
 
     
@@ -328,7 +184,7 @@ int main(int argc, char *argv[]){
     int iteration=0;
     while(!g_stop){
         //here should be all the adcs!
-        if(adc0_0_ready.load() && adc1_0_ready.load() && adc0_1_ready.load() && adc1_1_ready.load()){
+        if(adc0_0_ready.load() && adc1_0_ready.load()){
             current_read =  write_buffer_index.load(std::memory_order_acquire); 
             //TODO: this only work if I just have 2 buffers!
             next_write = 1-current_read;
@@ -336,32 +192,21 @@ int main(int argc, char *argv[]){
 
             //restart the data collecting
             adc0_0_ready.store(0);
-            adc0_1_ready.store(0);
             chA0Started.store(0);
-            chA1Started.store(0);
             adc1_0_ready.store(0);
-            adc1_1_ready.store(0);
             chB0Started.store(0);
-            chB1Started.store(0);
-
             if(writedata_adc(iteration, 0,
                 adc0_0_re[current_read], adc0_0_im[current_read], 
                 adc1_0_re[current_read], adc1_0_im[current_read],
-                firstSampleA0, firstSampleB0, numsamples)
-                    std::cout << "error writing the SDR0 data out\n";
-
-            if(writedata_adc(iteration, 1,
-                adc0_1_re[current_read], adc0_1_im[current_read], 
-                adc1_1_re[current_read], adc1_1_im[current_read],
-                firstSampleA1, firstSampleB1, numsamples)
-                    std::cout << "error writing the SDR1 data out\n";
+                firstSampleA0, firstSampleB0, nsamples_global)){
+                    std::cout << "error writing the data out\n";
+	    }
             iteration ++;
         }
     }
 
     std::cout << "Release the api...";
     sdrplay_api_ReleaseDevice(chosenDevice0);
-    sdrplay_api_ReleaseDevice(chosenDevice1);
     std::cout << "done\n";
     free_api();
     return 0;

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.22)
 project(phase_correlator)
 
 include_directories(../includes
@@ -7,6 +7,7 @@ include_directories(../includes
 add_executable(${PROJECT_NAME} 
     main.cpp
     sdr_config.cpp
+    global_params.cpp
 )
 
 
