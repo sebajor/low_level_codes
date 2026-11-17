@@ -15,7 +15,8 @@ int configureChoseDevice(sdrplay_api_DeviceT* &chosenDevice,
         sdrplay_api_RxChannelParamsT* &chParamsA, 
         sdrplay_api_RxChannelParamsT* &chParamsB, 
         hyperparameters &params,
-        sdrplay_api_ErrT &err
+        sdrplay_api_ErrT &err,
+	bool ref_out_en=false
         );
 
 int intialize_device(sdrplay_api_DeviceT* &chosenDevice, 

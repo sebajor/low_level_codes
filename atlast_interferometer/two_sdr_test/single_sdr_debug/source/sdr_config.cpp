@@ -118,6 +118,9 @@ int configureChoseDevice(sdrplay_api_DeviceT* &chosenDevice,
         return 1;
     }
     deviceParams->devParams->fsFreq.fsHz = params.fsamp;
+    //test to activate the ref out clock...
+    deviceParams->devParams->rspDuoParams.extRefOutputEn = 1;
+	//
     chParamsA = deviceParams->rxChannelA;
     chParamsB = deviceParams->rxChannelB;
     //chParamsA->tunerParams.rfFreq.rfHz = 220000000.0;

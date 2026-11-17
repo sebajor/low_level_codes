@@ -1,6 +1,9 @@
 #include "../includes/global_params.h"
 #include "../includes/sdr_config.h"
 
+/*
+ * this code is fine.. but each SDR callback has its own flags and that brought problems...
+ */
 
 
 void signal_handler(int signum){
@@ -206,7 +209,7 @@ int main(int argc, char *argv[]){
     std::cout << "done\n";
 
     std::cout << "selecting sdr0..\n";
-    if(select_device(devs, 0, chosenDevice0))
+    if(select_device(devs, 1, chosenDevice0))
         exit(0);
     std::cout << "done\n\n";
 
@@ -235,7 +238,7 @@ int main(int argc, char *argv[]){
 	}
     
     std::cout << "selecting sdr1..\n";
-    if(select_device(devs, 1, chosenDevice1))
+    if(select_device(devs, 0, chosenDevice1))
         exit(0);
     std::cout << "done\n";
     std::cout << "configuring sdr1...\n";
@@ -249,7 +252,9 @@ int main(int argc, char *argv[]){
     cbFns1.StreamBCbFn = StreamB1Callback;
     cbFns1.EventCbFn = EventCallback;
     
-
+	std::cout << "sleeping to see if the damn clock locks....";
+    std::this_thread::sleep_for(std::chrono::milliseconds(3*60000));	//this should be one minute...
+	std::cout << "done\n";
     std::cout << "unlocking api..";
     sdrplay_api_UnlockDeviceApi(); //CHECK!!! this was on the configureChosenDevice previously!
     std::cout << "done\n";
@@ -288,6 +293,7 @@ int main(int argc, char *argv[]){
     int local_batch_num=0;
     int next_write = 0;
     int iteration=0;
+	int first_count0=0, first_count1=0, first_count2=0, first_count3=0;
     while(!g_stop){
         //here should be all the adcs!
         if(adc0_0_ready.load() && adc1_0_ready.load() && adc0_1_ready.load() && adc1_1_ready.load()){
@@ -295,6 +301,25 @@ int main(int argc, char *argv[]){
             //TODO: this only work if I just have 2 buffers!
             next_write = 1-current_read;
             write_buffer_index.store(next_write, std::memory_order_release);
+			first_count0 = firstSampleA0.load();
+			first_count1 = firstSampleB0.load();
+			first_count2 = firstSampleA1.load();
+			first_count3 = firstSampleB1.load();
+            //write the data out
+	    if(writedata_adc(iteration, 0,
+                adc0_0_re[current_read], adc0_0_im[current_read], 
+                adc1_0_re[current_read], adc1_0_im[current_read],
+                first_count0, first_count1, nsamples_global)){
+                    std::cout << "error writing the SDR0 data out\n";
+	    }
+
+            if(writedata_adc(iteration, 1,
+                adc0_1_re[current_read], adc0_1_im[current_read], 
+                adc1_1_re[current_read], adc1_1_im[current_read],
+                first_count2, first_count3, nsamples_global)){
+                    std::cout << "error writing the SDR1 data out\n";
+	    }
+            iteration ++;
 
             //restart the data collecting
             adc0_0_ready.store(0);
@@ -306,21 +331,11 @@ int main(int argc, char *argv[]){
             chB0Started.store(0);
             chB1Started.store(0);
 
-            if(writedata_adc(iteration, 0,
-                adc0_0_re[current_read], adc0_0_im[current_read], 
-                adc1_0_re[current_read], adc1_0_im[current_read],
-                firstSampleA0, firstSampleB0, nsamples_global)){
-                    std::cout << "error writing the SDR0 data out\n";
-	    }
-
-            if(writedata_adc(iteration, 1,
-                adc0_1_re[current_read], adc0_1_im[current_read], 
-                adc1_1_re[current_read], adc1_1_im[current_read],
-                firstSampleA1, firstSampleB1, nsamples_global)){
-                    std::cout << "error writing the SDR1 data out\n";
-	    }
-            iteration ++;
         }
+		if(iteration == 300){
+			std::cout << "iteration 300!\n";
+			break;
+		}
     }
 
     std::cout << "Release the api...";

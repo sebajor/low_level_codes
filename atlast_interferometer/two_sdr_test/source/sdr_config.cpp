@@ -84,7 +84,8 @@ int configureChoseDevice(sdrplay_api_DeviceT* &chosenDevice,
         sdrplay_api_RxChannelParamsT* &chParamsA, 
         sdrplay_api_RxChannelParamsT* &chParamsB, 
         hyperparameters &params,
-        sdrplay_api_ErrT &err
+        sdrplay_api_ErrT &err,
+	bool ref_out_en
         ){
     //check hw version
     if (chosenDevice->hwVer != SDRPLAY_RSPduo_ID){
@@ -122,6 +123,11 @@ int configureChoseDevice(sdrplay_api_DeviceT* &chosenDevice,
         sdrplay_api_Close();
         return 1;
     }
+    if(ref_out_en){
+		std::cout << "turning reference output on..";
+		deviceParams->devParams->rspDuoParams.extRefOutputEn = 1;
+		std::cout << "done\n";
+	}
     deviceParams->devParams->fsFreq.fsHz = params.fsamp;
     chParamsA = deviceParams->rxChannelA;
     chParamsB = deviceParams->rxChannelB;
